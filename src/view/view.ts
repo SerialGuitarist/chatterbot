@@ -4,6 +4,7 @@ import  ChatterUI from '../ui/ChatterUI.svelte';
 import { mount, unmount } from 'svelte';
 
 import { messages } from "../chat";
+import { get } from "svelte/store";
 
 export const VIEW_TYPE = 'chatterbot-view';
 
@@ -56,14 +57,15 @@ export class ChatterbotView extends ItemView {
 	// os instead the arrow function methods auto binds this
 		// this.llama.test();
 	// }
-	openai = async () => {
-		console.log("calling backend");
+	llama = async () => {
+		// console.log("calling backend");
+		// const result = await this.plugin.askLlama([{ role: "user", content: "Hey!" }]);
+		const chatHistory = get(messages);
+		const result = await this.plugin.askLlama(chatHistory);
 
-		const result = await this.plugin.askLlama([
-			{ role: "user", content: "Hey!" }
-		]);
-
-		console.log("LLM result:", result);
+		// TODO: error handling here
+		messages.update(m => [...m, {role: "assistant", content: result.content}]);
+		// console.log("LLM result:", result);
 	}
 
 

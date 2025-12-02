@@ -6,8 +6,6 @@ import { App, Editor, MarkdownView, Modal, PluginSettingTab, Setting } from 'obs
 import { ChatterbotView, VIEW_TYPE } from './view/view';
 import Llama from './llama';
 
-// Remember to rename these classes and interfaces!
-
 interface ChatterbotPluginSettings {
 	apiKey: string;
 }
@@ -31,7 +29,7 @@ export default class ChatterbotPlugin extends Plugin {
 			(leaf) => new ChatterbotView(leaf, this)
 		);
 
-		this.addRibbonIcon('dice', 'wallahi view', () => {
+		this.addRibbonIcon('dice', 'Chatterbot view', () => {
 			this.activateView();
 		});
 
@@ -78,7 +76,7 @@ export default class ChatterbotPlugin extends Plugin {
 
 	async askLlama(messages) {
 		let mainResult = await this.llama.ask(messages)
-		console.log("mainresult:", mainResult);
+		// console.log("mainresult:", mainResult);
 		return mainResult;
 	}
 }
@@ -122,16 +120,5 @@ class SampleSettingTab extends PluginSettingTab {
 					this.plugin.settings.apiKey = value;
 					await this.plugin.saveSettings();
 				}));
-
-		// new Setting(containerEl)
-			// .setName('Setting #1')
-			// .setDesc('It\'s a secret')
-			// .addText(text => text
-				// .setPlaceholder('Enter your secret')
-				// .setValue(this.plugin.settings.mySetting)
-				// .onChange(async (value) => {
-					// this.plugin.settings.mySetting = value;
-					// await this.plugin.saveSettings();
-				// }));
 	}
 }
