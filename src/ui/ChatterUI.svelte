@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { marked } from "marked";
 	import { messages } from "../chat";
 
 	export let view;
@@ -29,11 +30,11 @@
 	function send() {
 		// ignore empty inputs
 		if (!input.trim()) return;
-	
+
 		// update svelte store
 		messages.update(m => [...m, {role: "user", content: input}]);
 		// const toSend = input;
-		
+
 		view.llama();
 		input = "";
 	}
@@ -48,28 +49,31 @@
 
 <div class="chat-container">
 	<div class="messages"> <!--bind:this={messagesContainer}> -->
-    {#each $messages as msg}
-      <div class="bubble {msg.role}">
-        {msg.content}
-      </div>
-    {/each}
-  </div>
+		{#each $messages as msg}
+			<div class="bubble {msg.role}">
+				{@html marked(msg.content)}
+			</div>
+		{/each}
+	</div>
 
-  <textarea
-		class="chat-input"
-		bind:value={input}
-		placeholder="Type a message..."
-		on:keydown={(e) => {
-			if (e.key === "Enter" && !e.shiftKey) {
-				e.preventDefault();
-				send();
-			}
-		}}
+	<textarea
+	 class="chat-input"
+  bind:value={input}
+  placeholder="Type a message..."
+  on:keydown={(e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+  e.preventDefault();
+  send();
+  }
+  }}
   ></textarea>
 
-  <button on:click={view.test}>Test</button>
-  <button on:click={view.clear}>Clear</button>
-  <button on:click={view.llama}>Llama</button>
+	<div class="buttons">
+		<button on:click={view.test}>Test</button>
+		<button on:click={view.summarize}>Summarize</button>
+		<button on:click={view.clear}>Clear</button>
+		<button on:click={view.llama}>Llama</button>
+	</div>
 </div>
 
 

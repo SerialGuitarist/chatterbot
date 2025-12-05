@@ -5,6 +5,7 @@ import { App, Editor, MarkdownView, Modal, PluginSettingTab, Setting } from 'obs
 
 import { ChatterbotView, VIEW_TYPE } from './view/view';
 import Llama from './llama';
+import { RAGStore } from "./ragStore";
 
 interface ChatterbotPluginSettings {
 	apiKey: string;
@@ -18,11 +19,18 @@ const DEFAULT_SETTINGS: ChatterbotPluginSettings = {
 export default class ChatterbotPlugin extends Plugin {
 	settings: ChatterbotPluginSettings;
 	llama: Llama;
+	rag: RAGStore;
 
 	async onload() {
 		await this.loadSettings();
 
 		this.llama = new Llama(this.settings.apiKey);
+
+		//// rag stuffs
+		this.rag = new RAGStore(this);
+		await this.rag.load();
+		await this.rag.updateFromVault();
+		/////
 
 		this.registerView(
 			VIEW_TYPE,
@@ -62,15 +70,14 @@ export default class ChatterbotPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign(
-			{},
-			DEFAULT_SETTINGS, 
-			await this.loadData()
-		);
+		const data = await this.loadData();
+		this.settings = data?.settings ?? DEFAULT_SETTINGS;
 	}
 
 	async saveSettings() {
-		await this.saveData(this.settings);
+		const data = await this.loadData() ?? {};
+		data.settings = this.settings;
+		await this.saveData(this.data);
 	}
 	
 
@@ -78,6 +85,34 @@ export default class ChatterbotPlugin extends Plugin {
 		let mainResult = await this.llama.ask(messages)
 		// console.log("mainresult:", mainResult);
 		return mainResult;
+	}
+
+	async test() {
+		console.log(this.rag);
+		// const vault = this.app.vault;
+		// let documents: Document[] = await Promise.all(
+			// vault.getMarkdownFiles().map( async (file) => {
+				// return new Document({
+					// pageContent: await vault.cachedRead(file),
+					// metadata: { source: file.path }
+				// })
+			// })
+		// );
+// 
+		// ////////////////////// splitting docuemnts
+		// const textSplitter = new RecursiveCharacterTextSplitter({
+			// chunkSize: 1000,
+			// chunkOverlap: 200,
+		// });
+// 
+		// const allSplits = await textSplitter.splitDocuments(documents);
+// 
+		// // console.log(allSplits.length);
+// 
+		// //////////////////// embedding
+		// const embeddings = new OpenAIEmbeddings({
+			// model: "text-embedding-3-large"
+		// });
 	}
 }
 

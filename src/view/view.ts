@@ -43,9 +43,11 @@ export class ChatterbotView extends ItemView {
 		if (this.chatterUI) unmount(this.chatterUI);
 	}
 
-	async test() {
-		messages.update(m => [...m, {role: "user", content: "test appended"}]);
+	test = async () => {
+		// messages.update(m => [...m, {role: "user", content: "test appended"}]);
+		this.plugin.test();
 	}
+
 
 	async clear() {
 		messages.update(m => []);
@@ -61,6 +63,7 @@ export class ChatterbotView extends ItemView {
 		// console.log("calling backend");
 		// const result = await this.plugin.askLlama([{ role: "user", content: "Hey!" }]);
 		const chatHistory = get(messages);
+		// console.log(chatHistory);
 		const result = await this.plugin.askLlama(chatHistory);
 
 		// TODO: error handling here
@@ -68,6 +71,28 @@ export class ChatterbotView extends ItemView {
 		// console.log("LLM result:", result);
 	}
 
+	summarize = async () => {
+		const file = this.app.workspace.getActiveFile();
+		if (!file) {
+			console.log("No file open");
+			return;
+		}
+
+		const content = await this.app.vault.read(file);
+		// console.log(content);
+
+		const chatHistory = [
+			...get(messages),
+			{role: "user", content: "Summarize"},
+			{role: "user", content: "Document to summarize: " + content},
+		];
+		// console.log(chatHistory);
+		const result = await this.plugin.askLlama(chatHistory);
+
+		// TODO: error handling here
+		messages.update(m => [...m, {role: "assistant", content: result.content}]);
+		// console.log("LLM result:", result);
+	}
 
 
 }

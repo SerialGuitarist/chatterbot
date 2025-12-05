@@ -3,6 +3,7 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages";
 
+
 function toLC(msg) {
 	if (msg.role === "assistant") return new AIMessage(msg.content);
 	if (msg.role === "system") return new SystemMessage(msg.content);
@@ -38,5 +39,6 @@ export default class Llama {
 		const aiMsg = await this.model.invoke()
 		console.log(aiMsg)
 	}
+
 }
 

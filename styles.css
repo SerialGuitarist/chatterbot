@@ -1,46 +1,168 @@
 /*
-
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
-
-If your plugin does not need CSS, delete this file.
-
+Chatterbot Plugin CSS
 */
+
 .chatbot-view {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
+	height: 100%;
+	display: flex;
+	flex-direction: column;
 }
+
+/* -------- Layout -------- */
 
 .chat-container {
-display: flex;
-flex-direction: column;
-height: 100%;
-padding: 12px;
-gap: 10px;
-}
-
-.chat-input {
-  height: 120px;
-  font-size: 16px;
-  padding: 8px;
-  resize: vertical; /* user can drag if they want */
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	padding: 12px;
+	gap: 10px;
 }
 
 .messages {
-flex: 1;
-overflow-y: auto;
-padding-right: 6px;
+	flex: 1;
+	overflow-y: auto;
+	padding-right: 6px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
 }
+
+/* Textarea input */
+.chat-input {
+	height: 120px;
+	font-size: 16px;
+	padding: 8px;
+	resize: vertical;
+}
+
+/* Buttons grid */
+.buttons {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	grid-auto-rows: auto;
+	gap: 10px;
+	margin-top: 10px;
+}
+
+.buttons button {
+	width: 100%;
+	padding: 8px 12px;
+}
+
+/* -------- Bubbles -------- */
 
 .bubble {
-padding: 8px 12px;
-margin: 4px 0;
-border-radius: 8px;
-max-width: 80%;
-white-space: pre-wrap;
+	padding: 8px 12px;
+	border-radius: 8px;
+	max-width: 80%;
+	white-space: pre-wrap;
+	line-height: 1.35;
+	display: block;
 }
 
-.user { background: var(--interactive-accent); color: white; margin-left: auto; }
-.assistant { background: var(--background-secondary); }
+/* User bubble */
+.user {
+	background: var(--interactive-accent);
+	color: white;
+	margin-left: auto;
+}
+
+/* Assistant bubble */
+.assistant {
+	background: var(--background-secondary);
+	color: var(--text-normal);
+}
+
+/* -------- Markdown Rendering -------- */
+
+/* Code blocks */
+.bubble pre {
+	background: var(--background-primary-alt);
+	padding: 8px;
+	border-radius: 6px;
+	overflow-x: auto;
+	font-family: var(--font-monospace);
+	margin: 0; /* override Obsidian spacing */
+}
+
+/* Inline code */
+.bubble code {
+	background: var(--background-primary-alt);
+	padding: 2px 4px;
+	border-radius: 4px;
+	font-family: var(--font-monospace);
+}
+
+/* Headings */
+.bubble h1,
+.bubble h2,
+.bubble h3,
+.bubble h4,
+.bubble h5,
+.bubble h6 {
+	margin: 4px 0;
+	padding: 0;
+}
+
+/* Lists */
+.bubble ul,
+.bubble ol {
+	margin: 4px 0 4px 16px;
+	padding: 0;
+}
+
+/* Blockquotes */
+.bubble blockquote {
+	border-left: 3px solid var(--interactive-accent);
+	padding-left: 8px;
+	margin: 4px 0;
+}
+
+/* -------- Fix ALL double spacing / blank lines -------- */
+
+/* Reset default margins inside bubbles */
+.bubble * {
+	margin-top: 0 !important;
+	margin-bottom: 0 !important;
+}
+
+/* Allow small spacing *between* paragraphs if needed */
+.bubble p + p {
+	margin-top: 4px !important;
+}
+
+/* Remove bottom spacing from final element */
+.bubble > *:last-child {
+	margin-bottom: 0 !important;
+}
+
+/* Remove top spacing from first element */
+.bubble > *:first-child {
+	margin-top: 0 !important;
+}
+
+/* HARD OVERRIDE: absolutely no extra spacing below bubbles */
+.bubble,
+.bubble * {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+/* Some markdown renderers add phantom line-height spacing — kill it */
+.bubble {
+    line-height: 1.25;
+}
+
+/* Some themes wrap messages in hidden <p> or <div> — flatten them */
+.bubble > p:last-child,
+.bubble > div:last-child,
+.bubble > span:last-child {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+/* Some themes inject <br> after markdown blocks — hide them */
+.bubble br:last-child {
+    display: none !important;
+}
 
