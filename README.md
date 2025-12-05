@@ -1,1 +1,1 @@
-Chatbot for Obsidian
+Chatbot for Obsidian. Demo coming soon.
