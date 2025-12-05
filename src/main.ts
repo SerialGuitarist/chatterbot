@@ -24,13 +24,14 @@ export default class ChatterbotPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
-		this.llama = new Llama(this.settings.apiKey);
 
 		//// rag stuffs
 		this.rag = new RAGStore(this);
 		await this.rag.load();
 		await this.rag.updateFromVault();
 		/////
+
+		this.llama = new Llama(this.settings.apiKey, this.rag);
 
 		this.registerView(
 			VIEW_TYPE,
@@ -88,7 +89,10 @@ export default class ChatterbotPlugin extends Plugin {
 	}
 
 	async test() {
-		console.log(this.rag);
+		const retriever = this.rag.getRetriever();
+		const output = await retriever.invoke("Who is Governance of Iron");
+		console.log(output);
+		// console.log(this.rag);
 		// const vault = this.app.vault;
 		// let documents: Document[] = await Promise.all(
 			// vault.getMarkdownFiles().map( async (file) => {

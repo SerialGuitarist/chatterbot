@@ -65,9 +65,10 @@ export class ChatterbotView extends ItemView {
 		const chatHistory = get(messages);
 		// console.log(chatHistory);
 		const result = await this.plugin.askLlama(chatHistory);
+		const reply = result.reply;
 
 		// TODO: error handling here
-		messages.update(m => [...m, {role: "assistant", content: result.content}]);
+		messages.update(m => [...m, {role: "assistant", content: reply.content}]);
 		// console.log("LLM result:", result);
 	}
 
@@ -88,9 +89,10 @@ export class ChatterbotView extends ItemView {
 		];
 		// console.log(chatHistory);
 		const result = await this.plugin.askLlama(chatHistory);
+		const reply = result.reply;
 
 		// TODO: error handling here
-		messages.update(m => [...m, {role: "assistant", content: result.content}]);
+		messages.update(m => [...m, {role: "assistant", content: reply.content}]);
 		// console.log("LLM result:", result);
 	}
 

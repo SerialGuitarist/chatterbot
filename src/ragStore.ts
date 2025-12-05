@@ -191,7 +191,12 @@ export class RAGStore {
 	getRetriever(k = 5) {
 		if (!this.vectorStore)
 			throw new Error("RAG not loaded — call rag.load() first");
-		return this.vectorStore.asRetriever(k);
+		return this.vectorStore.asRetriever({
+			searchType: "mmr",
+			searchKwargs: {
+				fetchK: k
+			}
+		});
 	}
 }
 

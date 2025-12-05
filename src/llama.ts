@@ -13,8 +13,9 @@ function toLC(msg) {
 export default class Llama {
 	model: ChatOpenAI;
 	apiKey: string;
+	rag: RAGStore;
 	
-	constructor(apiKey: string) {
+	constructor(apiKey: string, rag: RAGStore = null) {
 		this.apiKey = apiKey;
 		// console.log(this.apiKey);
 		this.model = new ChatOpenAI({
@@ -26,12 +27,36 @@ export default class Llama {
 			temperature: 0.7
 			// other params...
 		})
+		this.rag = rag;
 	}
 
 	async ask(messages) {
-		const formatted = messages.map(toLC);
+		// my attempts to decouple this code as much as possible
+		// has lead me down some dark dark paths such as this code block
+
+		// 1. get retriever
+		const retriever = this.rag.getRetriever();
+
+		// 2. get last user query
+		const lastUserMessage = messages[messages.length - 1].content;
+
+		// 3. use that to get the context documents
+		const output = await retriever.invoke(lastUserMessage);
+		const contexts = output.map((doc) => doc.pageContent );
+
+		// 4. append that to the messages
+		const augmentedMessages = [
+			...messages,
+			{role: "system", content: "Context: " + contexts.join("\n---\n")}
+		];
+
+		const formatted = augmentedMessages.map(toLC);
 		const result = await this.model.invoke(formatted);
-		return result;
+
+		return {
+			reply: result,
+			context: contexts
+		};
 	}
 
 	async test() {
