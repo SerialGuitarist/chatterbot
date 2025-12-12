@@ -2,45 +2,42 @@ import { Plugin } from "obsidian";
 import { Document } from "@langchain/core/documents";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { OpenAIEmbeddings } from "@langchain/openai";
-// import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import { MemoryVectorStore } from "@langchain/classic/vectorstores/memory";
-import xxhash64 from "xxhash-wasm";
+
+// ---------------- hashing stuffs have been deprecated in current implementation
+// import xxhash64 from "xxhash-wasm";
+// // might move ower to something called a noncryptographic hash like xxhash
+// // if this turns out to be too slow
+// async function sha256(str: string) {
+	// const buffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+	// return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, "0")).join("");
+// }
+// 
+// // let xx: ((input: string, seed?: number) => string) | null = null;
+// let xx: any = null;
+// 
+// async function getXX() {
+	// if (!xx) {
+		// xx = await xxhash64();
+	// }
+	// return xx;
+// }
+// 
+// async function xxhash(str: string): Promise<string> {
+	// const { h64 } = await getXX();
+	// return h64(str); // returns hex string
+// }
+// -----------------------------------------------------------------------------
 
 interface PersistedChunk {
-	id: string;				// provided by document spliiter
+	// id: string;				// provided by document spliiter
 	file: string;          	// original markdown path
-	hash: string;			// checksum of the chunk
+	// hash: string;			// checksum of the chunk
 	embedding: number[];    // embedding vector
 	content: string;		// yahoo
-	position: number;      	// chunk index inside the file
+	// position: number;      	// chunk index inside the file
 }
 
-
-interface PersistedRAGData {
-	chunks: PersistedChunk[];
-}
-
-// might move ower to something called a noncryptographic hash like xxhash
-// if this turns out to be too slow
-async function sha256(str: string) {
-	const buffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
-	return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, "0")).join("");
-}
-
-// let xx: ((input: string, seed?: number) => string) | null = null;
-let xx: any = null;
-
-async function getXX() {
-	if (!xx) {
-		xx = await xxhash64();
-	}
-	return xx;
-}
-
-async function xxhash(str: string): Promise<string> {
-	const { h64 } = await getXX();
-	return h64(str); // returns hex string
-}
 
 
 export class RAGStore {
@@ -48,15 +45,19 @@ export class RAGStore {
 	vectorStore: MemoryVectorStore | null = null;
 	embeddings: OpenAIEmbeddings;
 	chunks: PersistedChunk[] = [];
-	hashFunction: (input: string) => Promise<string>;
+	// hashFunction: (input: string) => Promise<string>;
+	persistedFiles: string[] = [];
+	lastUpdate: number = 0;
 
-	constructor(plugin: Plugin, hashFunction = xxhash) {
+
+	constructor(plugin: Plugin) {
+	// constructor(plugin: Plugin, hashFunction = xxhash) {
 		this.plugin = plugin;
 		this.embeddings = new OpenAIEmbeddings({
 			model: "text-embedding-3-large",
 			apiKey: plugin.settings.apiKey
 		});
-		this.hashFunction = hashFunction;
+		// this.hashFunction = hashFunction;
 	}
 
 	// read persistence from disk
@@ -64,9 +65,9 @@ export class RAGStore {
 		const data = await this.plugin.loadData();
 		// data?. ony chains if data is not null otherwise is null
 		// ?? [] returns [] if null
-		const stored = (data?.chunks ?? []) as PersistedChunk[];
-
-		this.chunks = stored;
+		this.chunks = (data?.chunks ?? []) as PersistedChunk[];
+		this.lastUpdate = data?.lastUpdate ?? 0 // of type timestamp
+		this.persistedFiles = data?.persistedFiles ?? [] // of type [string] denoting file paths
 		console.log("RAG: loaded", this.chunks.length, "chunks");
 
 		this.vectorStore = new MemoryVectorStore(this.embeddings);
@@ -80,10 +81,10 @@ export class RAGStore {
 					new Document({
 					pageContent: c.content,
 					metadata: {
-						id: c.id,
+						// id: c.id,
 						file: c.file,
-						hash: c.hash,
-						position: c.position,
+						// hash: c.hash,
+						// position: c.position,
 					},
 				})
 			)
@@ -93,13 +94,152 @@ export class RAGStore {
 	// save vector store as json into data.json
 	async save() {
 		const data = await this.plugin.loadData() ?? {};
-		data.chunks = this.chunks;   // update just the RAG section
+		data.chunks = this.chunks;
+		data.lastUpdate = this.lastUpdate;
+		data.persistedFiles = this.persistedFiles;
 		await this.plugin.saveData(data);
 		console.log("RAG: saved", this.chunks.length, "chunks");
 	}
 
 	// update index by embedding only changed chunks
 	async updateFromVault() {
+		// possible changes:
+		// - normal editing => captured by last modified => delete chunks from this file and regenerate them from the file
+		// - created file => captured by last modified => delete chunks from this file and regenerate them from the file
+		// - deleted file => internal indexing contains a list of filepaths that are currently up to date in the index
+		//					=> turn that into a map of path to boolean and while iterating through the entire vault
+		//					   be checking them as true then afterwards, filter for the stuff we didn't see then delete
+		//					   the records of all of those at the end
+		// - moved files => assumed to be solved by procedures identical to deletd then created elsewhere
+
+		// -----------------------
+		// 1. one pass over all the files
+		//		add all files into another set, allCurrentFiles, for deleted file purposes
+		//		if file has with last modified dates later than lastUpdate
+		//			adds them all into some set, toEmbed
+
+		// 2. one pass over all the persisted files
+		//		see if theyre in allCurrentFiles, if not, means deleted, add them to deletedFiles
+
+		// 3. one pass over persisted chunks
+		//		if from a file in deletedFiles, delete (ie, dont add to the new persisted chunks)
+
+		// 4. one pass over toEmbed files
+		//		split them, embed them, add them to persisted chunks
+
+		// 5. turn persisted chunks into vectorstore
+		// save question mark
+		// ------------------------
+
+		// -------------- 0. setting up
+		// warm up. go do some stretches and run a few klicks and then some more stretches
+		console.log("Updating from vault")
+
+		// -------------- 1. pass over the current files
+		const allCurrentFiles = new Set<string>();
+		const filesToEmbed = new Set<TFile>();
+
+		const vault = this.plugin.app.vault;
+		const vaultFiles = vault.getMarkdownFiles()
+		console.log("---- 1. Passing over " + vaultFiles.length + " vault files.")
+		for (const file of vaultFiles) {
+
+			allCurrentFiles.add(file.path);
+			// console.log(file)
+
+			if (file.stat.mtime > this.lastUpdate) {
+				filesToEmbed.add(file);
+			}
+		}
+
+		// -------------- 2. pass over the persisted files
+		const deletedFiles = new Set<string>();
+		console.log("---- 2. Passing over " + this.persistedFiles.length + " persisted files.")
+		for (const file of this.persistedFiles) {
+			if (!allCurrentFiles.has(file)) {
+				deletedFiles.add(file);
+			}
+		}
+
+		// -------------- 3. pass over persisted chunks
+		const newChunks: PersistedChunk[] = [];
+		console.log("---- 3. Passing over " + this.chunks.length + " persisted chunks.")
+		for (const chunk of this.chunks) {
+			if (!deletedFiles.has(chunk.file)) {
+				newChunks.push(chunk);
+			}
+		}
+
+		// -------------- 4. one pass over toEmbed files
+		const splitter = new RecursiveCharacterTextSplitter({
+			chunkSize: 1000,
+			chunkOverlap: 200,
+		});
+		console.log("---- 4. Passing over " + filesToEmbed.size + " files to embed.")
+		for (const file of filesToEmbed) {
+			const text = await vault.cachedRead(file);
+
+
+			const splits = await splitter.splitText(text);
+
+			// chunk indexing doesnt have anything to d owith
+			// chunk sizing so we index them by 0s 1s and 2s
+			// let position = 0;
+			for (const chunkText of splits) {
+				// we dont care if this was modified or newly created
+				// embed new chunk
+				const embedding = await this.embeddings.embedQuery(chunkText);
+
+				newChunks.push({
+					file: file.path,
+					embedding,
+					content: chunkText,
+				});
+			}
+		}
+
+		// -------------- 5. persisted chunks -> vector store
+		this.chunks = newChunks;
+		console.log("---- 5. Rebuilding vector store from " + this.chunks.length + " chunks.");
+
+		// rebuild vector store
+		this.vectorStore = new MemoryVectorStore(this.embeddings);
+		await this.vectorStore.addVectors(
+			this.chunks.map(c => c.embedding),
+			this.chunks.map(
+				c =>
+					new Document({
+					pageContent: c.content,
+					metadata: {
+						// id: c.id,
+						file: c.file,
+						// hash: c.hash,
+						// position: c.position,
+					},
+				})
+			)
+		);
+
+		// -------------- 6. final cleanups
+		this.lastUpdate = Date.now();
+		this.persistedFiles = Array.from(allCurrentFiles);
+		await this.save();
+	}
+
+
+	// turn into a retriever
+	getRetriever(k = 5) {
+		if (!this.vectorStore)
+			throw new Error("RAG not loaded — call rag.load() first");
+		return this.vectorStore.asRetriever({
+			searchType: "mmr",
+			searchKwargs: {
+				fetchK: k
+			}
+		});
+	}
+
+	async deprecatedUpdateFromVault() {
 		const vault = this.plugin.app.vault;
 
 		// build a lookup map for chunk reuse
@@ -185,18 +325,6 @@ export class RAGStore {
 		);
 
 		await this.save();
-	}
-
-	// turn into a retriever
-	getRetriever(k = 5) {
-		if (!this.vectorStore)
-			throw new Error("RAG not loaded — call rag.load() first");
-		return this.vectorStore.asRetriever({
-			searchType: "mmr",
-			searchKwargs: {
-				fetchK: k
-			}
-		});
 	}
 }
 
