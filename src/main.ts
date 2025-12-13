@@ -4,7 +4,7 @@ import { Plugin, Notice, WorkspaceLeaf } from "obsidian";
 import { App, Editor, MarkdownView, Modal, PluginSettingTab, Setting } from 'obsidian';
 
 import { ChatterbotView, VIEW_TYPE } from './view/view';
-import Llama from './llama';
+import { Llama } from './llama';
 import { RAGStore } from "./ragStore";
 
 interface ChatterbotPluginSettings {
@@ -28,7 +28,7 @@ export default class ChatterbotPlugin extends Plugin {
 		//// rag stuffs
 		this.rag = new RAGStore(this);
 		await this.rag.load();
-		await this.rag.updateFromVault();
+		// await this.rag.updateFromVault();
 		/////
 
 		this.llama = new Llama(this.settings.apiKey, this.rag);
@@ -43,7 +43,9 @@ export default class ChatterbotPlugin extends Plugin {
 		});
 
 		this.addSettingTab(new ChatterBotSettingTab(this.app, this));
-		this.activateView();
+		this.app.workspace.onLayoutReady(() => {
+			this.activateView();
+		});
 	}
 
 	async activateView() {
@@ -67,7 +69,7 @@ export default class ChatterbotPlugin extends Plugin {
 	}
 
 	onunload() {
-
+		
 	}
 
 	async loadSettings() {
@@ -78,7 +80,7 @@ export default class ChatterbotPlugin extends Plugin {
 	async saveSettings() {
 		const data = await this.loadData() ?? {};
 		data.settings = this.settings;
-		await this.saveData(this.data);
+		await this.saveData(data);
 	}
 	
 

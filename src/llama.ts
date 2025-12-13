@@ -10,7 +10,7 @@ function toLC(msg) {
 	return new HumanMessage(msg.content);
 }
 
-export default class Llama {
+export class Llama {
 	model: ChatOpenAI;
 	apiKey: string;
 	rag: RAGStore;
