@@ -1,6 +1,7 @@
 // shared storage for ChatterUI.svelte and view.ts
 
 import { writable } from "svelte/store";
+import type { LlamaStatus } from "../llama";
 
 export interface ChatMessage {
 	role: "user" | "assistant";
@@ -8,3 +9,5 @@ export interface ChatMessage {
 }
 
 export const messages = writable<ChatMessage[]>([]);
+
+export const status = writable<LlamaStatus>({ phase: "idle" });

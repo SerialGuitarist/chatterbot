@@ -76,7 +76,7 @@ export class ChatterbotView extends ItemView {
 
 
 		// TODO: error handling here
-		messages.update(m => [...m, {role: "assistant", content: reply.content}]);
+		messages.update(m => [...m, {role: "assistant", content: reply}]);
 		// console.log("LLM result:", result);
 	}
 

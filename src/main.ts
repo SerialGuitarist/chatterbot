@@ -4,8 +4,10 @@ import { Plugin, Notice, WorkspaceLeaf } from "obsidian";
 import { App, Editor, MarkdownView, Modal, PluginSettingTab, Setting } from 'obsidian';
 
 import { ChatterbotView, VIEW_TYPE } from './view/view';
-import { Llama } from './llama';
+import { Llama, ManualLlama } from './llama';
 import { RAGStore } from "./ragStore";
+import { status } from "./chat";
+
 
 interface ChatterbotPluginSettings {
 	apiKey: string;
@@ -23,6 +25,11 @@ export default class ChatterbotPlugin extends Plugin {
 
 	async onload() {
 		await this.loadSettings();
+		this.addSettingTab(new ChatterBotSettingTab(this.app, this));
+		if (this.settings.apiKey == 'sk-1234567890') {
+			new Notice("Set API key in Chatterbot settins and reload the plugin")
+			return;
+		}
 
 
 		//// rag stuffs
@@ -31,7 +38,17 @@ export default class ChatterbotPlugin extends Plugin {
 		// await this.rag.updateFromVault();
 		/////
 
-		this.llama = new Llama(this.settings.apiKey, this.rag);
+		this.llama = new ManualLlama(
+		// this.llama = new Llama(
+			this.settings.apiKey, 
+			this.rag,
+			(s) => status.set(s)
+		);
+
+			// this.settings.apiKey, 
+			// this.rag,
+			// (s) => status.set(s)
+		// );
 
 		this.registerView(
 			VIEW_TYPE,
@@ -42,7 +59,6 @@ export default class ChatterbotPlugin extends Plugin {
 			this.activateView();
 		});
 
-		this.addSettingTab(new ChatterBotSettingTab(this.app, this));
 		this.app.workspace.onLayoutReady(() => {
 			this.activateView();
 		});
@@ -95,9 +111,10 @@ export default class ChatterbotPlugin extends Plugin {
 	}
 
 	async test() {
-		const retriever = this.rag.getRetriever();
-		const output = await retriever.invoke("Who is Governance of Iron");
-		console.log(output);
+		this.llama.test();
+		// const retriever = this.rag.getRetriever();
+		// const output = await retriever.invoke("Who is Governance of Iron");
+		// console.log(output);
 	}
 }
 
