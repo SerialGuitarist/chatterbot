@@ -122,12 +122,19 @@ export class ManualLlama extends Llama {
 		this.retrieveTool = tool(
 			async ({ query } : { query: string }) => {
 				this.status({ phase: "thinking", detail: "Retrieving: " + query  });
-				// console.log("Retrieving: " + query);
+				console.log("Retrieving: " + query);
 				const retriever = this.rag.getRetriever();
 				const documents = await retriever.invoke(query);
-				// const contexts = output.map((doc) => doc.pageContent );
-				// return contexts;
-				return documents.map(d => d.pageContent).join("\n---\n");
+				const collatedDocuments = documents.map(d => d.pageContent).join("\n---\n");
+
+				// -- testing the effectiveness of having the llm restructure the output --
+				// const messages = [{"role": "user", "content": "Summarize the following: " + collatedDocuments}].map(toLC);
+				// const response = await this.model.invoke(messages)
+				// return response.content;
+				// -- as it turns out, doesn't add a lot while making it much slower
+
+				return collatedDocuments;
+
 			}, 
 			{
 				name: "retrieve",
@@ -159,9 +166,9 @@ export class ManualLlama extends Llama {
 
 				if (response.tool_calls) {
 					for (const toolCall of response.tool_calls) {
-						console.log(toolCall);
+						// console.log(toolCall);
 						let query = toolCall.args.query;
-						context += "\n---\n" + await this.retrieveTool.invoke({ query });					
+						context += "Output of \`retrieve\` tool with query \"" + query + "\": " + await this.retrieveTool.invoke({ query }) + "\n---\n";
 						// console.log(context);
 					}
 					this.status({ phase: "thinking", detail: "Agent reasoning with retrieved context" });

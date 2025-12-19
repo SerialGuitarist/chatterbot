@@ -26,7 +26,7 @@ export default class ChatterbotPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 		this.addSettingTab(new ChatterBotSettingTab(this.app, this));
-		if (this.settings.apiKey == 'sk-1234567890') {
+		if (this.settings.apiKey == 'sk-1234567890' || this.settings.apiKey == "") {
 			new Notice("Set API key in Chatterbot settins and reload the plugin")
 			return;
 		}
@@ -132,7 +132,7 @@ class ChatterBotSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('API Key')
+			.setName('OpenAI API Key')
 			.setDesc('It\'s a secret')
 			.addText(text => text
 				.setPlaceholder('Enter your secret')
